@@ -58,18 +58,18 @@ export default async function DashboardPage({
   const defaultDate = today.startsWith(yearMonth) ? today : `${yearMonth}-01`;
 
   return (
-    <main className="grid gap-6 pb-10">
-      <section className="flex flex-col gap-3 rounded-lg border bg-card p-6 shadow-sm">
+    <main className="grid gap-4 pb-8 sm:gap-6 sm:pb-10">
+      <section className="flex flex-col gap-3 rounded-lg border bg-card p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h1 className="text-2xl font-semibold">Dashboard</h1>
+            <h1 className="text-xl font-semibold sm:text-2xl">Dashboard</h1>
             <p className="text-sm text-muted-foreground">
               {process.env.DATABASE_URL
                 ? "DB保存モード"
                 : "DB未接続のためメモリ保存（再起動で消えます）"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
             <span className="text-sm text-muted-foreground">対象月</span>
             <span className="rounded-md border px-3 py-1 text-sm">{yearMonth}</span>
           </div>
@@ -78,8 +78,8 @@ export default async function DashboardPage({
 
       <SummaryCards allTime={allTimeTotals} month={currentMonthTotals} />
 
-      <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
-        <section className="rounded-lg border bg-card p-6 shadow-sm">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-[1.1fr_1fr]">
+        <section className="rounded-lg border bg-card p-4 shadow-sm sm:p-6">
           <h2 className="text-lg font-semibold">収支入力</h2>
           <p className="text-sm text-muted-foreground">
             日付 / 店舗 / 機種 / 投資 / 回収を入力すると差額が自動計算されます。

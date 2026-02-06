@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { formatYen, profitClass } from "@/lib/pachinko/format";
 
 type EntryFormProps = {
   defaultDate: string;
@@ -18,10 +19,6 @@ function parseNumber(value: string) {
   return Number.isFinite(n) ? n : 0;
 }
 
-function formatYen(value: number) {
-  return value.toLocaleString("ja-JP");
-}
-
 export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
   const [inAmount, setInAmount] = useState("");
   const [outAmount, setOutAmount] = useState("");
@@ -31,7 +28,7 @@ export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
   }, [inAmount, outAmount]);
 
   return (
-    <form className="grid gap-4" action={action}>
+    <form className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:p-5" action={action}>
       <input type="hidden" name="ym" value={yearMonth} />
 
       <div className="grid gap-2">
@@ -49,7 +46,7 @@ export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
         <Input id="machine" name="machine" placeholder="例: ○○" required />
       </div>
 
-      <div className="grid gap-3 md:grid-cols-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-2">
           <Label htmlFor="inAmount">投資額（円）</Label>
           <Input
@@ -87,15 +84,17 @@ export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
         <Textarea id="memo" name="memo" placeholder="台番号 / 店 / メモなど" />
       </div>
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-muted-foreground">
           差額:{" "}
-          <span className={profit >= 0 ? "text-emerald-600" : "text-red-500"}>
+          <span className={profitClass(profit)}>
             {profit >= 0 ? "+" : ""}
             {formatYen(profit)}円
           </span>
         </div>
-        <Button type="submit">保存</Button>
+        <Button type="submit" className="w-full sm:w-auto">
+          保存
+        </Button>
       </div>
     </form>
   );

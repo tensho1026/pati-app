@@ -9,18 +9,18 @@ export function SiteHeader() {
       <Link href="/" className="text-lg font-bold tracking-tight">
         Pati App
       </Link>
-      <nav className="flex items-center gap-2">
+      <nav className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
         <SignedIn>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="flex-1 sm:flex-none">
             <Link href="/dashboard">Dashboard</Link>
           </Button>
           <UserButton afterSignOutUrl="/" />
         </SignedIn>
         <SignedOut>
-          <Button asChild>
+          <Button asChild className="flex-1 sm:flex-none">
             <Link href="/sign-in">ログイン</Link>
           </Button>
-          <Button variant="outline" asChild>
+          <Button variant="outline" asChild className="flex-1 sm:flex-none">
             <Link href="/sign-up">新規登録</Link>
           </Button>
         </SignedOut>
@@ -28,4 +28,3 @@ export function SiteHeader() {
     </header>
   );
 }
-
