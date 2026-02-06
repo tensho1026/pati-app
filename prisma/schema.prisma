@@ -1,0 +1,27 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model PachinkoEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  /// YYYY-MM-DD（ユーザーのローカル日付として扱う）
+  playedOn  String
+  /// YYYY-MM（集計高速化用）
+  yearMonth String
+  parlor    String
+  machine   String
+  inAmount  Int
+  outAmount Int
+  memo      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, playedOn])
+  @@index([userId, yearMonth])
+}
