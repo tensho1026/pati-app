@@ -49,6 +49,36 @@ function deriveYearMonth(playedOn: string) {
   return playedOn.slice(0, 7);
 }
 
+function logPrismaFallback(operation: string, error: unknown) {
+  console.error(`[entry-repository] Prisma ${operation} failed. Fallback to memory store.`, error);
+}
+
+function mapDbEntry(row: {
+  id: string;
+  userId: string;
+  playedOn: string;
+  yearMonth: string;
+  parlor: string;
+  machine: string;
+  inAmount: number;
+  outAmount: number;
+  memo: string | null;
+  createdAt: Date;
+}): PachinkoEntry {
+  return {
+    id: row.id,
+    userId: row.userId,
+    playedOn: row.playedOn,
+    yearMonth: row.yearMonth,
+    parlor: row.parlor,
+    machine: row.machine,
+    inAmount: row.inAmount,
+    outAmount: row.outAmount,
+    memo: row.memo ?? null,
+    createdAt: row.createdAt
+  };
+}
+
 export function calcProfit(entry: Pick<PachinkoEntry, "inAmount" | "outAmount">) {
   return entry.outAmount - entry.inAmount;
 }
@@ -60,30 +90,23 @@ export async function createEntry(
   const yearMonth = deriveYearMonth(input.playedOn);
 
   if (prisma) {
-    const saved = await prisma.pachinkoEntry.create({
-      data: {
-        userId,
-        playedOn: input.playedOn,
-        yearMonth,
-        parlor: input.parlor,
-        machine: input.machine,
-        inAmount: input.inAmount,
-        outAmount: input.outAmount,
-        memo: input.memo ?? null
-      }
-    });
-    return {
-      id: saved.id,
-      userId: saved.userId,
-      playedOn: saved.playedOn,
-      yearMonth: saved.yearMonth,
-      parlor: saved.parlor,
-      machine: saved.machine,
-      inAmount: saved.inAmount,
-      outAmount: saved.outAmount,
-      memo: saved.memo ?? null,
-      createdAt: saved.createdAt
-    };
+    try {
+      const saved = await prisma.pachinkoEntry.create({
+        data: {
+          userId,
+          playedOn: input.playedOn,
+          yearMonth,
+          parlor: input.parlor,
+          machine: input.machine,
+          inAmount: input.inAmount,
+          outAmount: input.outAmount,
+          memo: input.memo ?? null
+        }
+      });
+      return mapDbEntry(saved);
+    } catch (error) {
+      logPrismaFallback("createEntry", error);
+    }
   }
 
   const entry: PachinkoEntry = {
@@ -104,8 +127,12 @@ export async function createEntry(
 
 export async function deleteEntry(userId: string, id: string) {
   if (prisma) {
-    await prisma.pachinkoEntry.deleteMany({ where: { id, userId } });
-    return;
+    try {
+      await prisma.pachinkoEntry.deleteMany({ where: { id, userId } });
+      return;
+    } catch (error) {
+      logPrismaFallback("deleteEntry", error);
+    }
   }
 
   const entries = getUserEntries(userId);
@@ -115,22 +142,15 @@ export async function deleteEntry(userId: string, id: string) {
 
 export async function listEntries(userId: string): Promise<PachinkoEntry[]> {
   if (prisma) {
-    const rows = await prisma.pachinkoEntry.findMany({
-      where: { userId },
-      orderBy: [{ playedOn: "desc" }, { createdAt: "desc" }]
-    });
-    return rows.map((r) => ({
-      id: r.id,
-      userId: r.userId,
-      playedOn: r.playedOn,
-      yearMonth: r.yearMonth,
-      parlor: r.parlor,
-      machine: r.machine,
-      inAmount: r.inAmount,
-      outAmount: r.outAmount,
-      memo: r.memo ?? null,
-      createdAt: r.createdAt
-    }));
+    try {
+      const rows = await prisma.pachinkoEntry.findMany({
+        where: { userId },
+        orderBy: [{ playedOn: "desc" }, { createdAt: "desc" }]
+      });
+      return rows.map(mapDbEntry);
+    } catch (error) {
+      logPrismaFallback("listEntries", error);
+    }
   }
 
   const entries = getUserEntries(userId);
@@ -145,22 +165,15 @@ export async function listEntriesByMonth(
   yearMonth: string
 ): Promise<PachinkoEntry[]> {
   if (prisma) {
-    const rows = await prisma.pachinkoEntry.findMany({
-      where: { userId, yearMonth },
-      orderBy: [{ playedOn: "desc" }, { createdAt: "desc" }]
-    });
-    return rows.map((r) => ({
-      id: r.id,
-      userId: r.userId,
-      playedOn: r.playedOn,
-      yearMonth: r.yearMonth,
-      parlor: r.parlor,
-      machine: r.machine,
-      inAmount: r.inAmount,
-      outAmount: r.outAmount,
-      memo: r.memo ?? null,
-      createdAt: r.createdAt
-    }));
+    try {
+      const rows = await prisma.pachinkoEntry.findMany({
+        where: { userId, yearMonth },
+        orderBy: [{ playedOn: "desc" }, { createdAt: "desc" }]
+      });
+      return rows.map(mapDbEntry);
+    } catch (error) {
+      logPrismaFallback("listEntriesByMonth", error);
+    }
   }
 
   return (await listEntries(userId)).filter((e) => e.yearMonth === yearMonth);
@@ -175,22 +188,26 @@ export type MonthlyTotal = {
 
 export async function listMonthlyTotals(userId: string): Promise<MonthlyTotal[]> {
   if (prisma) {
-    const rows = await prisma.pachinkoEntry.groupBy({
-      by: ["yearMonth"],
-      where: { userId },
-      _sum: { inAmount: true, outAmount: true },
-      orderBy: { yearMonth: "desc" }
-    });
-    return rows.map((row) => {
-      const inAmount = row._sum.inAmount ?? 0;
-      const outAmount = row._sum.outAmount ?? 0;
-      return {
-        yearMonth: row.yearMonth,
-        inAmount,
-        outAmount,
-        profit: outAmount - inAmount
-      };
-    });
+    try {
+      const rows = await prisma.pachinkoEntry.groupBy({
+        by: ["yearMonth"],
+        where: { userId },
+        _sum: { inAmount: true, outAmount: true },
+        orderBy: { yearMonth: "desc" }
+      });
+      return rows.map((row) => {
+        const inAmount = row._sum.inAmount ?? 0;
+        const outAmount = row._sum.outAmount ?? 0;
+        return {
+          yearMonth: row.yearMonth,
+          inAmount,
+          outAmount,
+          profit: outAmount - inAmount
+        };
+      });
+    } catch (error) {
+      logPrismaFallback("listMonthlyTotals", error);
+    }
   }
 
   const map = new Map<string, { inAmount: number; outAmount: number }>();
@@ -212,13 +229,17 @@ export async function listMonthlyTotals(userId: string): Promise<MonthlyTotal[]>
 
 export async function getAllTimeTotals(userId: string) {
   if (prisma) {
-    const result = await prisma.pachinkoEntry.aggregate({
-      where: { userId },
-      _sum: { inAmount: true, outAmount: true }
-    });
-    const inAmount = result._sum.inAmount ?? 0;
-    const outAmount = result._sum.outAmount ?? 0;
-    return { inAmount, outAmount, profit: outAmount - inAmount };
+    try {
+      const result = await prisma.pachinkoEntry.aggregate({
+        where: { userId },
+        _sum: { inAmount: true, outAmount: true }
+      });
+      const inAmount = result._sum.inAmount ?? 0;
+      const outAmount = result._sum.outAmount ?? 0;
+      return { inAmount, outAmount, profit: outAmount - inAmount };
+    } catch (error) {
+      logPrismaFallback("getAllTimeTotals", error);
+    }
   }
 
   const entries = await listEntries(userId);
@@ -226,4 +247,3 @@ export async function getAllTimeTotals(userId: string) {
   const outAmount = entries.reduce((sum, e) => sum + e.outAmount, 0);
   return { inAmount, outAmount, profit: outAmount - inAmount };
 }
-

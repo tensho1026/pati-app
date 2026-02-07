@@ -1,4 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
+import dynamic from "next/dynamic";
 import { redirect } from "next/navigation";
 import { formatISODate, formatYearMonth, isYearMonth } from "@/lib/date";
 import {
@@ -12,7 +13,11 @@ import { EntryForm } from "@/components/pachinko/entry-form";
 import { EntryTable } from "@/components/pachinko/entry-table";
 import { SummaryCards } from "@/components/pachinko/summary-cards";
 import { MonthlyTotalsTable } from "@/components/pachinko/monthly-totals-table";
-import { MonthlyChart } from "@/components/pachinko/monthly-chart";
+
+const MonthlyChart = dynamic(
+  () => import("@/components/pachinko/monthly-chart").then((mod) => mod.MonthlyChart),
+  { ssr: false }
+);
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
