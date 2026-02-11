@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { formatYen, profitClass } from "@/lib/pachinko/format";
 type EntryFormProps = {
   defaultDate: string;
   yearMonth: string;
-  action: (formData: FormData) => void;
+  action: (formData: FormData) => void | Promise<void>;
 };
 
 function parseNumber(value: string) {
@@ -20,6 +20,7 @@ function parseNumber(value: string) {
 }
 
 export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
+  const formRef = useRef<HTMLFormElement>(null);
   const [inAmount, setInAmount] = useState("");
   const [outAmount, setOutAmount] = useState("");
 
@@ -27,8 +28,20 @@ export function EntryForm({ defaultDate, yearMonth, action }: EntryFormProps) {
     return parseNumber(outAmount) - parseNumber(inAmount);
   }, [inAmount, outAmount]);
 
+  async function submitAction(formData: FormData) {
+    formRef.current?.reset();
+    setInAmount("");
+    setOutAmount("");
+    await action(formData);
+  }
+
   return (
-    <form className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:p-5" action={action}>
+    <form
+      ref={formRef}
+      className="grid gap-4 rounded-lg border bg-muted/20 p-4 sm:p-5"
+      action={submitAction}
+      autoComplete="off"
+    >
       <input type="hidden" name="ym" value={yearMonth} />
 
       <div className="grid gap-2">
